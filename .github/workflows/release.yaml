@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - '*'
-  schedule:
-    - cron: '0 2 * * *'
 env:
   CABAL_CACHE_DISABLE: ${{ vars.CABAL_CACHE_DISABLE }}
   CABAL_CACHE_NONFATAL: ${{ vars.CABAL_CACHE_NONFATAL }}
@@ -50,6 +48,13 @@ jobs:
                     , toolRequirements: "libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf"
                     , DISTRO: "Debian"
                     , ARTIFACT: "x86_64-linux-deb11"
+                    , ADD_CABAL_ARGS: "--enable-split-sections"
+                    },
+                    { image: "alpine:3.16"
+                    , installCmd: "apk add"
+                    , toolRequirements: "curl gcc g++ binutils binutils-gold coreutils bsd-compat-headers gmp-dev ncurses-dev libffi-dev make xz tar perl bash diffutils git gzip gnupg autoconf automake patchelf zlib zlib-dev bzip2 bzip2-dev findutils"
+                    , DISTRO: "Alpine"
+                    , ARTIFACT: "x86_64-linux-alpine"
                     , ADD_CABAL_ARGS: "--enable-split-sections"
                     },
                     { image: "ubuntu:18.04"
@@ -107,53 +112,15 @@ jobs:
                     , DISTRO: "CentOS"
                     , ARTIFACT: "x86_64-linux-centos7"
                     , ADD_CABAL_ARGS: "--enable-split-sections"
+                    },
+                    { image: "rockylinux:8"
+                    , installCmd: "yum -y install epel-release && yum install -y --allowerasing"
+                    , toolRequirements: "autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf"
+                    , DISTRO: "Unknown"
+                    , ARTIFACT: "x86_64-linux-unknown"
+                    , ADD_CABAL_ARGS: "--enable-split-sections"
                     }
                   ]
-        # TODO: rm
-        # Instead of manually adding the Unknown Linux Bindist jobs here,
-        # it should be part of the matrix above.
-        # However, due to GHC 9.4 shenanigans, we need some special logic.
-        # https://gitlab.haskell.org/ghc/ghc/-/issues/22268
-        #
-        # Perhaps we can migrate *all* unknown linux builds to a uniform
-        # image.
-        include:
-          - ghc: 9.2.8
-            platform:
-              { image: "rockylinux:8"
-              , installCmd: "yum -y install epel-release && yum install -y --allowerasing"
-              , toolRequirements: "autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf"
-              , DISTRO: "Unknown"
-              , ARTIFACT: "x86_64-linux-unknown"
-              , ADD_CABAL_ARGS: "--enable-split-sections"
-              }
-          - ghc: 9.4.8
-            platform:
-              { image: "fedora:27"
-              , installCmd: "dnf install -y"
-              , toolRequirements: "autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf"
-              , DISTRO: "Unknown"
-              , ARTIFACT: "x86_64-linux-unknown"
-              , ADD_CABAL_ARGS: "--enable-split-sections"
-              }
-          - ghc: 9.6.4
-            platform:
-              { image: "rockylinux:8"
-              , installCmd: "yum -y install epel-release && yum install -y --allowerasing"
-              , toolRequirements: "autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf"
-              , DISTRO: "Unknown"
-              , ARTIFACT: "x86_64-linux-unknown"
-              , ADD_CABAL_ARGS: "--enable-split-sections"
-              }
-          - ghc: 9.8.1
-            platform:
-              { image: "rockylinux:8"
-              , installCmd: "yum -y install epel-release && yum install -y --allowerasing"
-              , toolRequirements: "autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf"
-              , DISTRO: "Unknown"
-              , ARTIFACT: "x86_64-linux-unknown"
-              , ADD_CABAL_ARGS: "--enable-split-sections"
-              }
     container:
       image: ${{ matrix.platform.image }}
     steps:
@@ -198,7 +165,7 @@ jobs:
     ## The environments can be seen in https://github.com/haskell/haskell-language-server/settings/environments
     ## assuming you have the proper permissions.
     environment: CI
-    runs-on: [self-hosted, Linux, ARM64]
+    runs-on: ${{ matrix.platform.os }}
     env:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -207,15 +174,23 @@ jobs:
       ADD_CABAL_ARGS: ""
       DEBIAN_FRONTEND: noninteractive
       TZ: Asia/Singapore
-      ARTIFACT: "aarch64-linux-ubuntu20"
-      ARCH: ARM64
-      DISTRO: Ubuntu
+      DISTRO: Debian
     strategy:
       fail-fast: true
       matrix:
-        ghc: ["9.8.1", "9.6.4", "9.4.8", "9.2.8" ]
+        ghc: ["9.8.1", "9.6.4", "9.4.8", "9.2.8"]
+        platform: [
+#                   { os: [self-hosted, Linux, ARM64] }
+#                   , ARCH: "ARM"
+#                   , ARTIFACT: "armv7-linux-deb10"
+#                   },
+                    { os: [self-hosted, Linux, ARM64]
+                    , ARCH: "ARM64"
+                    , ARTIFACT: "aarch64-linux-deb10"
+                    }
+                  ]
     steps:
-      - uses: docker://arm64v8/ubuntu:focal
+      - uses: docker://hasufell/arm64v8-debian-haskell:10
         name: Cleanup (aarch64 linux)
         with:
           args: "find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +"
@@ -228,19 +203,45 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - uses: docker://hasufell/arm64v8-ubuntu-haskell:focal
+      - if: matrix.platform.ARCH == 'ARM'
+        uses: docker://hasufell/arm32v7-debian-haskell:10
+        name: Run build (armv7 linux)
+        with:
+          args: bash .github/scripts/build.sh
+        env:
+          GHC_VERSION: ${{ matrix.ghc }}
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
+
+      - if: matrix.platform.ARCH == 'ARM64'
+        uses: docker://hasufell/arm64v8-debian-haskell:10
         name: Run build (aarch64 linux)
         with:
           args: bash .github/scripts/build.sh
         env:
           GHC_VERSION: ${{ matrix.ghc }}
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
 
-      - uses: docker://hasufell/arm64v8-ubuntu-haskell:focal
+      - if: matrix.platform.ARCH == 'ARM'
+        uses: docker://hasufell/arm32v7-debian-haskell:10
+        name: Run build (armv7 linux)
+        with:
+          args: bash .github/scripts/tar.sh
+        env:
+          GHC_VERSION: ${{ matrix.ghc }}
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
+
+      - if: matrix.platform.ARCH == 'ARM64'
+        uses: docker://hasufell/arm64v8-debian-haskell:10
         name: Run build (aarch64 linux)
         with:
           args: bash .github/scripts/tar.sh
         env:
           GHC_VERSION: ${{ matrix.ghc }}
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
 
       - if: always()
         name: Upload artifact
@@ -250,7 +251,7 @@ jobs:
           retention-days: 2
           name: artifacts-arm
           path: |
-            ./out-${{ env.ARTIFACT }}-${{ matrix.ghc }}.tar
+            ./out-${{ matrix.platform.ARTIFACT }}-${{ matrix.ghc }}.tar
 
   build-mac-x86_64:
     name: Build binary (Mac x86_64)
@@ -424,6 +425,11 @@ jobs:
             toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf tree
             DISTRO: Debian
             ARTIFACT: "x86_64-linux-deb11"
+          - image: "alpine:3.16"
+            installCmd: "apk add"
+            toolRequirements: "curl gcc g++ binutils binutils-gold coreutils bsd-compat-headers gmp-dev ncurses-dev libffi-dev make xz tar perl bash diffutils git gzip gnupg autoconf automake patchelf  zlib zlib-dev bzip2 bzip2-dev findutils"
+            DISTRO: "Alpine"
+            ARTIFACT: "x86_64-linux-alpine"
           - image: ubuntu:18.04
             installCmd: apt-get update && apt-get install -y
             toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf tree
@@ -459,8 +465,8 @@ jobs:
             toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf tree
             DISTRO: Mint
             ARTIFACT: "x86_64-linux-mint19.3"
-          - image: "fedora:33"
-            installCmd: "dnf install -y"
+          - image: "rockylinux:8"
+            installCmd: "yum -y install epel-release && yum install -y --allowerasing"
             toolRequirements: "autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf tree"
             DISTRO: "Unknown"
             ARTIFACT: "x86_64-linux-unknown"
@@ -516,16 +522,27 @@ jobs:
 
   bindist-arm:
     name: Tar linux bindists (arm)
-    runs-on: [self-hosted, Linux, ARM64]
+    runs-on: ${{ matrix.platform.os }}
     needs: ["build-arm"]
     env:
       TARBALL_EXT: tar.xz
-      ARCH: ARM64
       DEBIAN_FRONTEND: noninteractive
-      ARTIFACT: "aarch64-linux-ubuntu20"
       TZ: Asia/Singapore
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: [
+#                   { os: [self-hosted, Linux, ARM64] }
+#                   , ARCH: "ARM"
+#                   , ARTIFACT: "armv7-linux-deb10"
+#                   },
+                    { os: [self-hosted, Linux, ARM64]
+                    , ARCH: "ARM64"
+                    , ARTIFACT: "aarch64-linux-deb10"
+                    }
+                  ]
     steps:
-      - uses: docker://arm64v8/ubuntu:focal
+      - uses: docker://hasufell/arm64v8-debian-haskell:10
         name: Cleanup (aarch64 linux)
         with:
           args: "find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +"
@@ -542,15 +559,41 @@ jobs:
           name: artifacts-arm
           path: ./
 
-      - uses: docker://hasufell/arm64v8-ubuntu-haskell:focal
-        name: Unpack
+      - if: matrix.platform.ARCH == 'ARM'
+        uses: docker://hasufell/arm32v7-debian-haskell:10
+        name: Unpack (armv7)
         with:
           args: bash .github/scripts/untar.sh
+        env:
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
 
-      - uses: docker://hasufell/arm64v8-ubuntu-haskell:focal
+      - if: matrix.platform.ARCH == 'ARM64'
+        uses: docker://hasufell/arm64v8-debian-haskell:10
+        name: Unpack (aarch64)
+        with:
+          args: bash .github/scripts/untar.sh
+        env:
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
+
+      - if: matrix.platform.ARCH == 'ARM'
+        uses: docker://hasufell/arm32v7-debian-haskell:10
+        name: Create bindist (armv7 linux)
+        with:
+          args: bash .github/scripts/bindist.sh
+        env:
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
+
+      - if: matrix.platform.ARCH == 'ARM64'
+        uses: docker://hasufell/arm64v8-debian-haskell:10
         name: Create bindist (aarch64 linux)
         with:
           args: bash .github/scripts/bindist.sh
+        env:
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
 
       - name: Upload bindist
         uses: actions/upload-artifact@v3
@@ -719,6 +762,11 @@ jobs:
             toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf tree
             DISTRO: Debian
             ARTIFACT: "x86_64-linux-deb11"
+          - image: "alpine:3.16"
+            installCmd: "apk add"
+            toolRequirements: "curl gcc g++ binutils binutils-gold coreutils bsd-compat-headers gmp-dev ncurses-dev libffi-dev make xz tar perl bash diffutils git gzip gnupg autoconf automake patchelf tree zlib zlib-dev bzip2 bzip2-dev findutils"
+            DISTRO: "Alpine"
+            ARTIFACT: "x86_64-linux-alpine"
           - image: ubuntu:18.04
             installCmd: apt-get update && apt-get install -y
             toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf tree
@@ -793,17 +841,28 @@ jobs:
 
   test-arm:
     name: Test ARM binary
-    runs-on: [self-hosted, Linux, ARM64]
+    runs-on: ${{ matrix.platform.os }}
     needs: ["bindist-arm"]
     env:
       TARBALL_EXT: tar.xz
       DEBIAN_FRONTEND: noninteractive
       TZ: Asia/Singapore
-      ARTIFACT: "aarch64-linux-ubuntu20"
-      ARCH: ARM64
-      DISTRO: Ubuntu
+      DISTRO: Debian
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: [
+#                   { os: [self-hosted, Linux, ARM64] }
+#                   , ARCH: "ARM"
+#                   , ARTIFACT: "armv7-linux-deb10"
+#                   },
+                    { os: [self-hosted, Linux, ARM64]
+                    , ARCH: "ARM64"
+                    , ARTIFACT: "aarch64-linux-deb10"
+                    }
+                  ]
     steps:
-      - uses: docker://arm64v8/ubuntu:focal
+      - uses: docker://hasufell/arm64v8-debian-haskell:10
         name: Cleanup (aarch64 linux)
         with:
           args: "find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +"
@@ -821,10 +880,23 @@ jobs:
           name: bindists-arm
           path: ./out
 
-      - uses: docker://hasufell/arm64v8-ubuntu-haskell:focal
+      - if: matrix.platform.ARCH == 'ARM'
+        uses: docker://hasufell/arm32v7-debian-haskell:10
+        name: Run test (armv7 linux)
+        with:
+          args: bash .github/scripts/test.sh
+        env:
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
+
+      - if: matrix.platform.ARCH == 'ARM64'
+        uses: docker://hasufell/arm64v8-debian-haskell:10
         name: Run test (aarch64 linux)
         with:
           args: bash .github/scripts/test.sh
+        env:
+          ARCH: ${{ matrix.platform.ARCH }}
+          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
 
   test-mac-x86_64:
     name: Test binary (Mac x86_64)
@@ -937,6 +1009,10 @@ jobs:
         with:
           path: ./out
           name: bindists-x86_64-linux-deb11
+      - uses: actions/download-artifact@v3
+        with:
+          path: ./out
+          name: bindists-x86_64-linux-alpine
       - uses: actions/download-artifact@v3
         with:
           path: ./out
