@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - '*'
-  schedule:
-    - cron: '0 2 * * *'
 env:
   CABAL_CACHE_DISABLE: ${{ vars.CABAL_CACHE_DISABLE }}
   CABAL_CACHE_NONFATAL: ${{ vars.CABAL_CACHE_NONFATAL }}
