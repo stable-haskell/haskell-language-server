@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.8.2", "9.6.4", "9.4.8", "9.2.8"]
+        ghc: ["9.8.2", "9.6.5", "9.4.8", "9.2.8"]
         platform: [ { image: "debian:9"
                     , installCmd: "sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list && sed -i 's|security.debian.org|archive.debian.org/|g' /etc/apt/sources.list && sed -i /-updates/d /etc/apt/sources.list && apt-get update && apt-get install -y"
                     , toolRequirements: "libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf"
@@ -198,7 +198,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.8.2", "9.6.4", "9.4.8", "9.2.8"]
+        ghc: ["9.8.2", "9.6.5", "9.4.8", "9.2.8"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -240,7 +240,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        ghc: ["9.8.2", "9.6.4", "9.4.8", "9.2.8"]
+        ghc: ["9.8.2", "9.6.5", "9.4.8", "9.2.8"]
         platform: [
 #                   { os: [self-hosted, Linux, ARM64] }
 #                   , ARCH: "ARM"
@@ -336,7 +336,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.8.2", "9.6.4", "9.4.8", "9.2.8"]
+        ghc: ["9.8.2", "9.6.5", "9.4.8", "9.2.8"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -381,7 +381,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.8.2", "9.6.4", "9.4.8", "9.2.8"]
+        ghc: ["9.8.2", "9.6.5", "9.4.8", "9.2.8"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -426,7 +426,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.8.2", "9.6.4", "9.4.8", "9.2.8"]
+        ghc: ["9.8.2", "9.6.5", "9.4.8", "9.2.8"]
     steps:
       - name: install windows deps
         shell: pwsh
