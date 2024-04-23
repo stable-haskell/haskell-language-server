@@ -246,7 +246,7 @@ jobs:
 #                   , ARCH: "ARM"
 #                   , ARTIFACT: "armv7-linux-deb10"
 #                   },
-                    { os: [self-hosted, Linux, ARM64]
+                    { os: [self-hosted, Linux, ARM64, maerwald]
                     , ARCH: "ARM64"
                     , ARTIFACT: "aarch64-linux-deb10"
                     }
@@ -613,7 +613,7 @@ jobs:
 #                   , ARCH: "ARM"
 #                   , ARTIFACT: "armv7-linux-deb10"
 #                   },
-                    { os: [self-hosted, Linux, ARM64]
+                    { os: [self-hosted, Linux, ARM64, maerwald]
                     , ARCH: "ARM64"
                     , ARTIFACT: "aarch64-linux-deb10"
                     }
@@ -993,7 +993,7 @@ jobs:
 #                   , ARCH: "ARM"
 #                   , ARTIFACT: "armv7-linux-deb10"
 #                   },
-                    { os: [self-hosted, Linux, ARM64]
+                    { os: [self-hosted, Linux, ARM64, maerwald]
                     , ARCH: "ARM64"
                     , ARTIFACT: "aarch64-linux-deb10"
                     }
