@@ -39,6 +39,7 @@ constraints:
   -- We want to be able to benefit from the performance optimisations
   -- in the future, thus: TODO: remove this flag.
   bitvec -simd,
+  hashable -arch-native
 
 
 
