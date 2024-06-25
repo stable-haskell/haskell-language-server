@@ -39,7 +39,7 @@ cat <<EOF > /dev/stdout
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-deb12.tar.xz" | awk '{ print $1 }')
             unknown_versioning: *hls-${RELEASE//./}-64-deb12
           Linux_Ubuntu:
-            '< 18': &hls-${RELEASE//./}-64-deb9
+            '< 18': *hls-${RELEASE//./}-64-deb9
             '( >= 18 && < 19 )':
               dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-ubuntu18.04.tar.xz
               dlSubdir: haskell-language-server-$RELEASE
@@ -113,9 +113,9 @@ cat <<EOF > /dev/stdout
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-mingw64.zip" | awk '{ print $1 }')
           FreeBSD:
             unknown_versioning:
-              dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-freebsd.tar.xz
+              dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-portbld-freebsd.tar.xz
               dlSubdir: haskell-language-server-$RELEASE
-              dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-freebsd.tar.xz" | awk '{ print $1 }')
+              dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-portbld-freebsd.tar.xz" | awk '{ print $1 }')
         A_ARM64:
           Linux_UnknownLinux:
             unknown_versioning:
