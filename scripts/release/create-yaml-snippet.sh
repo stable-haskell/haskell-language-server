@@ -21,11 +21,7 @@ cat <<EOF > /dev/stdout
       viArch:
         A_64:
           Linux_Debian:
-            '< 10': &hls-${RELEASE//./}-64-deb9
-              dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-deb9.tar.xz
-              dlSubdir: haskell-language-server-$RELEASE
-              dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-deb9.tar.xz" | awk '{ print $1 }')
-            '(>= 10 && < 11)': &hls-${RELEASE//./}-64-deb10
+            '< 11': &hls-${RELEASE//./}-64-deb10
               dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-deb10.tar.xz
               dlSubdir: haskell-language-server-$RELEASE
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-deb10.tar.xz" | awk '{ print $1 }')
@@ -39,26 +35,21 @@ cat <<EOF > /dev/stdout
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-deb12.tar.xz" | awk '{ print $1 }')
             unknown_versioning: *hls-${RELEASE//./}-64-deb12
           Linux_Ubuntu:
-            '< 18': *hls-${RELEASE//./}-64-deb9
-            '( >= 18 && < 19 )':
-              dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-ubuntu18.04.tar.xz
-              dlSubdir: haskell-language-server-$RELEASE
-              dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-ubuntu18.04.tar.xz" | awk '{ print $1 }')
-            '( >= 20 && < 22 )': &hls-${RELEASE//./}-64-ubuntu20
+            '< 22': &hls-${RELEASE//./}-64-ubuntu20
               dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-ubuntu20.04.tar.xz
               dlSubdir: haskell-language-server-$RELEASE
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-ubuntu20.04.tar.xz" | awk '{ print $1 }')
-            '( >= 22 && < 23 )': &hls-${RELEASE//./}-64-ubuntu22
+            '( >= 22 && < 24 )': &hls-${RELEASE//./}-64-ubuntu22
               dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-ubuntu22.04.tar.xz
               dlSubdir: haskell-language-server-$RELEASE
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-ubuntu22.04.tar.xz" | awk '{ print $1 }')
+            '( >= 24 && < 25 )': &hls-${RELEASE//./}-64-ubuntu24
+              dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-ubuntu24.04.tar.xz
+              dlSubdir: haskell-language-server-$RELEASE
+              dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-ubuntu24.04.tar.xz" | awk '{ print $1 }')
             unknown_versioning: *hls-${RELEASE//./}-64-ubuntu22
           Linux_Mint:
-            '< 20': &hls-${RELEASE//./}-64-mint19
-              dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-mint19.3.tar.xz
-              dlSubdir: haskell-language-server-$RELEASE
-              dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-mint19.3.tar.xz" | awk '{ print $1 }')
-            '(>= 20 && < 21)': &hls-${RELEASE//./}-64-mint20
+            '< 21': &hls-${RELEASE//./}-64-mint20
               dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-mint20.3.tar.xz
               dlSubdir: haskell-language-server-$RELEASE
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-mint20.3.tar.xz" | awk '{ print $1 }')
@@ -68,23 +59,10 @@ cat <<EOF > /dev/stdout
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-mint21.3.tar.xz" | awk '{ print $1 }')
             unknown_versioning: *hls-${RELEASE//./}-64-mint21
           Linux_Fedora:
-            '< 33': &hls-${RELEASE//./}-64-fedora27
-              dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-fedora27.tar.xz
-              dlSubdir: haskell-language-server-$RELEASE
-              dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-fedora27.tar.xz" | awk '{ print $1 }')
-            '>= 33': &hls-${RELEASE//./}-64-fedora33
+            unknown_versioning: &hls-${RELEASE//./}-64-fedora33
               dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-fedora33.tar.xz
               dlSubdir: haskell-language-server-$RELEASE
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-fedora33.tar.xz" | awk '{ print $1 }')
-            unknown_versioning: *hls-${RELEASE//./}-64-fedora27
-          Linux_CentOS:
-            '( >= 7 && < 8 )': &hls-${RELEASE//./}-64-centos
-              dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-centos7.tar.xz
-              dlSubdir: haskell-language-server-$RELEASE
-              dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-centos7.tar.xz" | awk '{ print $1 }')
-            unknown_versioning: *hls-${RELEASE//./}-64-centos
-          Linux_RedHat:
-            unknown_versioning: *hls-${RELEASE//./}-64-centos
           Linux_Rocky:
             '( >= 8 && < 9 )': &hls-${RELEASE//./}-64-rocky8
               dlUri: $baseUrl/haskell-language-server-$RELEASE-x86_64-linux-rocky8.tar.xz
@@ -95,6 +73,8 @@ cat <<EOF > /dev/stdout
               dlSubdir: haskell-language-server-$RELEASE
               dlHash: $(sha256sum "haskell-language-server-$RELEASE-x86_64-linux-rocky9.tar.xz" | awk '{ print $1 }')
             unknown_versioning: *hls-${RELEASE//./}-64-rocky9
+          Linux_RedHat:
+            unknown_versioning: *hls-${RELEASE//./}-64-rocky8
           Linux_UnknownLinux:
             unknown_versioning: *hls-${RELEASE//./}-64-rocky8
           Linux_Alpine:
