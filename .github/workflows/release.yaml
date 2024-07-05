@@ -78,13 +78,6 @@ jobs:
                     , ARTIFACT: "x86_64-linux-ubuntu24.04"
                     , ADD_CABAL_ARGS: "--enable-split-sections"
                     },
-                    { image: "linuxmintd/mint19.3-amd64"
-                    , installCmd: "apt-get update && apt-get install -y"
-                    , toolRequirements: "libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf"
-                    , DISTRO: "Mint"
-                    , ARTIFACT: "x86_64-linux-mint19.3"
-                    , ADD_CABAL_ARGS: "--enable-split-sections"
-                    },
                     { image: "linuxmintd/mint20.3-amd64"
                     , installCmd: "apt-get update && apt-get install -y"
                     , toolRequirements: "libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf"
@@ -492,11 +485,6 @@ jobs:
             toolRequirements: autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf tree
             DISTRO: Fedora
             ARTIFACT: "x86_64-linux-fedora33"
-          - image: linuxmintd/mint19.3-amd64
-            installCmd: apt-get update && apt-get install -y
-            toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf tree
-            DISTRO: Mint
-            ARTIFACT: "x86_64-linux-mint19.3"
           - image: "rockylinux:8"
             installCmd: "yum -y install epel-release && yum install -y --allowerasing"
             toolRequirements: "autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf tree"
@@ -869,11 +857,6 @@ jobs:
             toolRequirements: autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf tree
             DISTRO: Fedora
             ARTIFACT: "x86_64-linux-fedora33"
-          - image: linuxmintd/mint19.3-amd64
-            installCmd: apt-get update && apt-get install -y
-            toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf tree
-            DISTRO: Mint
-            ARTIFACT: "x86_64-linux-mint19.3"
           - image: "fedora:33"
             installCmd: dnf install -y
             toolRequirements: autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf tree
@@ -1147,10 +1130,6 @@ jobs:
         with:
           path: ./out
           name: bindists-x86_64-linux-rocky9
-      - uses: actions/download-artifact@v3
-        with:
-          path: ./out
-          name: bindists-x86_64-linux-mint19.3
       - uses: actions/download-artifact@v3
         with:
           path: ./out
