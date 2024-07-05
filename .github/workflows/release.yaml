@@ -87,7 +87,7 @@ jobs:
                     },
                     { image: "ubuntu:24.04"
                     , installCmd: "apt-get update && apt-get install -y"
-                    , toolRequirements: "libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf"
+                    , toolRequirements: "libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses6 libtinfo6 patchelf"
                     , DISTRO: "Ubuntu"
                     , ARTIFACT: "x86_64-linux-ubuntu24.04"
                     , ADD_CABAL_ARGS: "--enable-split-sections"
@@ -522,7 +522,7 @@ jobs:
             ARTIFACT: "x86_64-linux-ubuntu22.04"
           - image: ubuntu:24.04
             installCmd: apt-get update && apt-get install -y
-            toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf tree
+            toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses6 libtinfo6 patchelf tree
             DISTRO: Ubuntu
             ARTIFACT: "x86_64-linux-ubuntu24.04"
           - image: fedora:27
@@ -919,7 +919,7 @@ jobs:
             ARTIFACT: "x86_64-linux-ubuntu22.04"
           - image: ubuntu:24.04
             installCmd: apt-get update && apt-get install -y
-            toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf tree
+            toolRequirements: libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses6 libtinfo6 patchelf tree
             DISTRO: Ubuntu
             ARTIFACT: "x86_64-linux-ubuntu24.04"
           - image: fedora:27
