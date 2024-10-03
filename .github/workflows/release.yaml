@@ -99,6 +99,13 @@ jobs:
                     , ARTIFACT: "x86_64-linux-fedora33"
                     , ADD_CABAL_ARGS: "--enable-split-sections"
                     },
+                    { image: "fedora:40"
+                    , installCmd: "dnf install -y"
+                    , toolRequirements: "autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf"
+                    , DISTRO: "Fedora"
+                    , ARTIFACT: "x86_64-linux-fedora40"
+                    , ADD_CABAL_ARGS: "--enable-split-sections"
+                    },
                     { image: "centos:7"
                     , installCmd: "yum -y install epel-release && yum install -y"
                     , toolRequirements: "autoconf automake binutils bzip2 coreutils curl elfutils-devel elfutils-libs findutils gcc gcc-c++ git gmp gmp-devel jq lbzip2 make ncurses ncurses-compat-libs ncurses-devel openssh-clients patch perl pxz python3 sqlite sudo wget which xz zlib-devel patchelf"
