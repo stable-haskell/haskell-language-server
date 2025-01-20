@@ -5,11 +5,6 @@ set -eux
 . .github/scripts/env.sh
 . .github/scripts/common.sh
 
-# ensure ghcup
-if ! command -v ghcup ; then
-	install_ghcup
-fi
-
 # create tarball/zip
 case "${TARBALL_EXT}" in
     zip)

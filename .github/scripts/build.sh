@@ -11,16 +11,7 @@ uname
 pwd
 env
 
-# ensure ghcup
-install_ghcup
-
-# ensure cabal-cache
-download_cabal_cache "$HOME/.local/bin/cabal-cache"
-
-
 # build
-ghcup install ghc "${GHC_VERSION}"
-ghcup set ghc "${GHC_VERSION}"
 sed -i.bak -e '/DELETE MARKER FOR CI/,/END DELETE/d' cabal.project # see comment in cabal.project
 ecabal update
 ecabal user-config diff
@@ -48,7 +39,7 @@ case "$(uname)" in
 			   src/**/*.hs exe/*.hs
 
 		# shellcheck disable=SC2068
-		build_with_cache ${args[@]} exe:hls exe:hls-wrapper
+		ecabal build ${args[@]} exe:hls exe:hls-wrapper
 		cp dist-newstyle/cache/plan.json "$CI_PROJECT_DIR/out/plan.json/${ARTIFACT}-ghc-${GHC_VERSION}-plan.json"
 
 		# shellcheck disable=SC2068
@@ -58,7 +49,7 @@ case "$(uname)" in
         ;;
 	*)
 		emake --version
-		emake GHCUP=ghcup CABAL_CACHE_BIN=cabal-cache.sh S3_HOST="${S3_HOST}" S3_KEY="${ARTIFACT}" GHC_VERSION="${GHC_VERSION}" hls-ghc
+		emake GHCUP=ghcup GHC_VERSION="${GHC_VERSION}" hls-ghc
         ;;
 esac
 

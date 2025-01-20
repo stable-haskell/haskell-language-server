@@ -70,13 +70,14 @@ uname
 env
 
 # ensure ghcup
-install_ghcup
 ghcup install ghc --set 9.4.8
 
 (cd .. && ecabal update) # run cabal update outside project dir
 
 # unpack
 TARBALL_PREFIX="haskell-language-server"
+
+: "${GHCUP_BIN:=$(ghcup whereis bindir)}"
 mkdir -p "${GHCUP_BIN}"
 
 case "${TARBALL_EXT}" in

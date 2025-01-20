@@ -45,8 +45,6 @@ GHCUP       ?= echo
 GHCUP_GC    ?= $(GHCUP) gc
 GHCUP_RM    ?= $(GHCUP) rm
 
-CABAL_CACHE_BIN ?= echo
-
 ifeq ($(UNAME), Darwin)
 DLL       := *.dylib
 else
@@ -65,22 +63,11 @@ CABAL_INSTALL_ARGS      ?= --overwrite-policy=always --install-method=copy
 CABAL_INSTALL           := $(CABAL) $(CABAL_BASE_ARGS) v2-install
 PROJECT_FILE            := cabal.project
 
-S3_HOST ?=
-S3_KEY  ?=
-
 # set rpath relative to the current executable
 # TODO: on darwin, this doesn't overwrite rpath, but just adds to it,
 #       so we'll have the old rpaths from the build host in there as well
 define set_rpath
 	$(if $(filter Darwin,$(UNAME)), $(INSTALL_NAME_TOOL) -add_rpath "@executable_path/$(1)" "$(2)", $(PATCHELF) --force-rpath --set-rpath "\$$ORIGIN/$(1)" "$(2)")
-endef
-
-define sync_from
-	$(CABAL_CACHE_BIN) sync-from-archive --host-name-override=$(S3_HOST) --host-port-override=443 --host-ssl-override=True --region us-west-2 --store-path="$(ROOT_DIR)/$(STORE_DIR)" --archive-uri "s3://haskell-language-server/$(S3_KEY)"
-endef
-
-define sync_to
-	$(CABAL_CACHE_BIN) sync-to-archive --host-name-override=$(S3_HOST) --host-port-override=443 --host-ssl-override=True --region us-west-2 --store-path="$(ROOT_DIR)/$(STORE_DIR)" --archive-uri "s3://haskell-language-server/$(S3_KEY)"
 endef
 
 hls:
@@ -98,10 +85,8 @@ hls-ghc:
 	@if test -z "$(GHC_VERSION)" ; then echo >&2 "GHC_VERSION is not set" ; false ; fi
 	$(CABAL) $(CABAL_BASE_ARGS) configure --project-file="$(PROJECT_FILE)" -w "ghc-$(GHC_VERSION)" $(CABAL_ARGS) exe:haskell-language-server exe:haskell-language-server-wrapper
 	$(CABAL) $(CABAL_BASE_ARGS) build --project-file="$(PROJECT_FILE)" -w "ghc-$(GHC_VERSION)" $(CABAL_ARGS) --dependencies-only --dry-run exe:haskell-language-server exe:haskell-language-server-wrapper
-	$(call sync_from)
 	$(CP) dist-newstyle/cache/plan.json "$(ROOT_DIR)/out/plan.json/$(ARTIFACT)-ghc-$(GHC_VERSION)-plan.json"
 	$(CABAL_INSTALL) --project-file="$(PROJECT_FILE)" -w "ghc-$(GHC_VERSION)" $(CABAL_ARGS) $(CABAL_INSTALL_ARGS) --installdir="$(ROOT_DIR)/out/$(ARTIFACT)/$(GHC_VERSION)" exe:haskell-language-server exe:haskell-language-server-wrapper
-	$(call sync_to)
 	$(STRIP_S) "$(ROOT_DIR)/out/$(ARTIFACT)/$(GHC_VERSION)/haskell-language-server"
 	$(STRIP_S) "$(ROOT_DIR)/out/$(ARTIFACT)/$(GHC_VERSION)/haskell-language-server-wrapper"
 
@@ -138,7 +123,7 @@ bindist-ghc:
 	$(INSTALL_D) "$(BINDIST_OUT_DIR)/bin/"
 	$(INSTALL_X) "out/$(ARTIFACT)/$(GHC_VERSION)/haskell-language-server-wrapper" "$(BINDIST_OUT_DIR)/bin/haskell-language-server-wrapper"
 	$(INSTALL_D) "$(ROOT_DIR)/$(BINDIST_OUT_DIR)/lib/$(GHC_VERSION)"
-	$(FIND) "$(STORE_DIR)/ghc-$(GHC_VERSION)" -type f -name "$(DLL)" -execdir $(INSTALL_X) "{}" "$(ROOT_DIR)/$(BINDIST_OUT_DIR)/lib/$(GHC_VERSION)/{}" \;
+	$(FIND) "$(STORE_DIR)/ghc-$(GHC_VERSION)"* -type f -name "$(DLL)" -execdir $(INSTALL_X) "{}" "$(ROOT_DIR)/$(BINDIST_OUT_DIR)/lib/$(GHC_VERSION)/{}" \;
 	$(FIND) "$(ROOT_DIR)/$(BINDIST_OUT_DIR)/lib/$(GHC_VERSION)" -type f -name '$(DLL)' -execdir $(call set_rpath,,{}) \;
 
 version:

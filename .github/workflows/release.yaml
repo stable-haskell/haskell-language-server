@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - '*'
-env:
-  CABAL_CACHE_DISABLE: ${{ vars.CABAL_CACHE_DISABLE }}
-  CABAL_CACHE_NONFATAL: ${{ vars.CABAL_CACHE_NONFATAL }}
 
 jobs:
   build-linux:
@@ -20,7 +17,6 @@ jobs:
     env:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      S3_HOST: ${{ secrets.S3_HOST }}
       TARBALL_EXT: tar.xz
       ARCH: 64
       DEBIAN_FRONTEND: noninteractive
@@ -28,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.6.5", "9.4.8", "9.2.8"]
+        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.4.8"]
         platform: [ { image: "debian:10"
                     , installCmd: "apt-get update && apt-get install -y"
                     , toolRequirements: "libnuma-dev zlib1g-dev libgmp-dev libgmp10 libssl-dev liblzma-dev libbz2-dev git wget lsb-release software-properties-common gnupg2 apt-transport-https gcc autoconf automake build-essential curl ghc gzip libffi-dev libncurses-dev libncurses5 libtinfo5 patchelf"
@@ -129,7 +125,12 @@ jobs:
           echo "ID=linux" >> /etc/os-release
           echo "PRETTY_NAME=Linux" >> /etc/os-release
 
-      - uses: actions/checkout@v3
+      - uses: haskell/ghcup-setup@v1
+        with:
+          ghc: ${{ matrix.ghc }}
+          cabal: latest
+
+      - uses: actions/checkout@v4
 
       - name: Run build
         run: |
@@ -144,11 +145,11 @@ jobs:
 
       - if: always()
         name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           retention-days: 2
-          name: artifacts-${{ matrix.platform.ARTIFACT }}
+          name: artifacts-${{ matrix.platform.ARTIFACT }}-${{ matrix.ghc }}
           path: |
             ./out-${{ matrix.platform.ARTIFACT }}-${{ matrix.ghc }}.tar
 
@@ -165,16 +166,24 @@ jobs:
       ARTIFACT: "x86_64-portbld-freebsd"
       CABAL_CACHE_DISABLE: yes
       CABAL_CACHE_NONFATAL: yes
-      S3_HOST: "no"
       AWS_ACCESS_KEY_ID: "no"
       AWS_SECRET_ACCESS_KEY: "no"
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.6.5", "9.4.8", "9.2.8"]
+        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.4.8"]
     steps:
+      - name: Install prerequisites
+        run: |
+          sudo pkg install -y curl gcc gmp gmake ncurses perl5 libffi libiconv git bash misc/compat10x misc/compat11x misc/compat12x gmake llvm14
+
+      - uses: haskell/ghcup-setup@v1
+        with:
+          ghc: ${{ matrix.ghc }}
+          cabal: latest
+
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run build
         run: |
@@ -185,11 +194,11 @@ jobs:
 
       - if: always()
         name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           retention-days: 2
-          name: artifacts-freebsd
+          name: artifacts-freebsd-${{ matrix.ghc }}
           path: |
             ./out-${{ env.ARTIFACT }}-${{ matrix.ghc }}.tar
 
@@ -204,7 +213,6 @@ jobs:
     env:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      S3_HOST: ${{ secrets.S3_HOST }}
       TARBALL_EXT: tar.xz
       ADD_CABAL_ARGS: ""
       DEBIAN_FRONTEND: noninteractive
@@ -213,12 +221,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.6.5", "9.4.8", "9.2.8"]
+        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.4.8"]
         platform: [
-#                   { os: [self-hosted, Linux, ARM64, maerwald] }
-#                   , ARCH: "ARM"
-#                   , ARTIFACT: "armv7-linux-deb10"
-#                   },
                     { os: [self-hosted, Linux, ARM64, maerwald]
                     , ARCH: "ARM64"
                     , ARTIFACT: "aarch64-linux-deb10"
@@ -236,13 +240,13 @@ jobs:
         shell: bash
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - if: matrix.platform.ARCH == 'ARM'
-        uses: docker://hasufell/arm32v7-debian-haskell:10
-        name: Run build (armv7 linux)
+      - if: matrix.platform.ARCH == 'ARM64'
+        uses: docker://hasufell/arm64v8-debian-haskell:10
+        name: Run build (aarch64 linux)
         with:
-          args: bash .github/scripts/build.sh
+          args: ghcup run -i --ghc ${{ matrix.ghc }} --cabal latest bash .github/scripts/build.sh
         env:
           GHC_VERSION: ${{ matrix.ghc }}
           ARCH: ${{ matrix.platform.ARCH }}
@@ -252,27 +256,7 @@ jobs:
         uses: docker://hasufell/arm64v8-debian-haskell:10
         name: Run build (aarch64 linux)
         with:
-          args: bash .github/scripts/build.sh
-        env:
-          GHC_VERSION: ${{ matrix.ghc }}
-          ARCH: ${{ matrix.platform.ARCH }}
-          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
-
-      - if: matrix.platform.ARCH == 'ARM'
-        uses: docker://hasufell/arm32v7-debian-haskell:10
-        name: Run build (armv7 linux)
-        with:
-          args: bash .github/scripts/tar.sh
-        env:
-          GHC_VERSION: ${{ matrix.ghc }}
-          ARCH: ${{ matrix.platform.ARCH }}
-          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
-
-      - if: matrix.platform.ARCH == 'ARM64'
-        uses: docker://hasufell/arm64v8-debian-haskell:10
-        name: Run build (aarch64 linux)
-        with:
-          args: bash .github/scripts/tar.sh
+          args: ghcup run -i --ghc ${{ matrix.ghc }} --cabal latest bash .github/scripts/tar.sh
         env:
           GHC_VERSION: ${{ matrix.ghc }}
           ARCH: ${{ matrix.platform.ARCH }}
@@ -280,11 +264,11 @@ jobs:
 
       - if: always()
         name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           retention-days: 2
-          name: artifacts-arm
+          name: artifacts-arm-${{ matrix.ghc }}
           path: |
             ./out-${{ matrix.platform.ARTIFACT }}-${{ matrix.ghc }}.tar
 
@@ -295,12 +279,11 @@ jobs:
     ## The environments can be seen in https://github.com/haskell/haskell-language-server/settings/environments
     ## assuming you have the proper permissions.
     environment: CI
-    runs-on: macOS-12
+    runs-on: macOS-13
     env:
       MACOSX_DEPLOYMENT_TARGET: 10.13
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      S3_HOST: ${{ secrets.S3_HOST }}
       ADD_CABAL_ARGS: ""
       ARTIFACT: "x86_64-apple-darwin"
       ARCH: 64
@@ -309,10 +292,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.6.5", "9.4.8", "9.2.8"]
+        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.4.8"]
     steps:
+      - uses: haskell/ghcup-setup@v1
+        with:
+          ghc: ${{ matrix.ghc }}
+          cabal: latest
+
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run build
         run: |
@@ -324,11 +312,11 @@ jobs:
 
       - if: always()
         name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           retention-days: 2
-          name: artifacts-mac-x86_64
+          name: artifacts-mac-x86_64-${{ matrix.ghc }}
           path: |
             ./out-${{ env.ARTIFACT }}-${{ matrix.ghc }}.tar
 
@@ -344,7 +332,6 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: 10.13
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      S3_HOST: ${{ secrets.S3_HOST }}
       ADD_CABAL_ARGS: ""
       ARTIFACT: "aarch64-apple-darwin"
       ARCH: ARM64
@@ -354,10 +341,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.6.5", "9.4.8", "9.2.8"]
+        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.4.8"]
     steps:
+      - uses: haskell/ghcup-setup@v1
+        with:
+          ghc: ${{ matrix.ghc }}
+          cabal: latest
+
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run build
         run: |
@@ -371,11 +363,11 @@ jobs:
 
       - if: always()
         name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           retention-days: 2
-          name: artifacts-mac-aarch64
+          name: artifacts-mac-aarch64-${{ matrix.ghc }}
           path: |
             ./out-${{ env.ARTIFACT }}-${{ matrix.ghc }}.tar
 
@@ -390,7 +382,6 @@ jobs:
     env:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      S3_HOST: ${{ secrets.S3_HOST }}
       ADD_CABAL_ARGS: ""
       ARTIFACT: "x86_64-mingw64"
       ARCH: 64
@@ -399,8 +390,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.6.5", "9.4.8", "9.2.8"]
+        ghc: ["9.10.1", "9.8.2", "9.6.6", "9.4.8"]
     steps:
+      - uses: haskell/ghcup-setup@v1
+        with:
+          ghc: ${{ matrix.ghc }}
+          cabal: latest
+
       - name: install windows deps
         shell: pwsh
         run: |
@@ -410,7 +406,7 @@ jobs:
           taskkill /F /FI "MODULES eq msys-2.0.dll"
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run build (windows)
         run: |
@@ -424,11 +420,11 @@ jobs:
 
       - if: always()
         name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           retention-days: 2
-          name: artifacts-win
+          name: artifacts-win-${{ matrix.ghc }}
           path: |
             ./out/*
 
@@ -519,11 +515,14 @@ jobs:
           echo "ID=linux" >> /etc/os-release
           echo "PRETTY_NAME=Linux" >> /etc/os-release
 
-      - uses: actions/checkout@v3
+      - uses: haskell/ghcup-setup@v1
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
-          name: artifacts-${{ matrix.ARTIFACT }}
+          pattern: artifacts-${{ matrix.ARTIFACT }}-*
+          merge-multiple: true
           path: ./
 
       - name: Create bindist
@@ -538,7 +537,7 @@ jobs:
           ARTIFACT: ${{ matrix.ARTIFACT }}
 
       - name: Upload bindist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           name: bindists-${{ matrix.ARTIFACT }}
@@ -546,9 +545,9 @@ jobs:
             ./out/*.tar.xz
             ./out/plan.json/*
 
-      - uses: geekyeggo/delete-artifact@v2
+      - uses: geekyeggo/delete-artifact@v4
         with:
-          name: artifacts-${{ matrix.ARTIFACT }}
+          name: artifacts-${{ matrix.ARTIFACT }}-*
 
   bindist-arm:
     name: Tar linux bindists (arm)
@@ -582,11 +581,12 @@ jobs:
           git config --global --get-all safe.directory | grep '^\*$' || git config --global --add safe.directory "*"
         shell: bash
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: artifacts-arm
+          pattern: artifacts-arm-*
+          merge-multiple: true
           path: ./
 
       - if: matrix.platform.ARCH == 'ARM'
@@ -626,7 +626,7 @@ jobs:
           ARTIFACT: ${{ matrix.platform.ARTIFACT }}
 
       - name: Upload bindist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           name: bindists-arm
@@ -634,24 +634,27 @@ jobs:
             ./out/*.tar.xz
             ./out/plan.json/*
 
-      - uses: geekyeggo/delete-artifact@v2
+      - uses: geekyeggo/delete-artifact@v4
         with:
-          name: artifacts-arm
+          name: artifacts-arm-*
 
   bindist-mac-x86_64:
     name: Tar bindists (Mac x86_64)
-    runs-on: macOS-12
+    runs-on: macOS-13
     needs: ["build-mac-x86_64"]
     env:
       TARBALL_EXT: tar.xz
       ARCH: 64
       ARTIFACT: "x86_64-apple-darwin"
     steps:
-      - uses: actions/checkout@v3
+      - uses: haskell/ghcup-setup@v1
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
-          name: artifacts-mac-x86_64
+          pattern: artifacts-mac-x86_64-*
+          merge-multiple: true
           path: ./
 
       - name: Create bindist
@@ -664,7 +667,7 @@ jobs:
           bash .github/scripts/bindist.sh
 
       - name: Upload bindist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           name: bindists-mac-x86_64
@@ -672,9 +675,9 @@ jobs:
             ./out/*.tar.xz
             ./out/plan.json/*
 
-      - uses: geekyeggo/delete-artifact@v2
+      - uses: geekyeggo/delete-artifact@v4
         with:
-          name: artifacts-mac-x86_64
+          name: artifacts-mac-x86_64-*
 
   bindist-mac-aarch64:
     name: Tar bindists (Mac aarch64)
@@ -685,11 +688,14 @@ jobs:
       ARCH: ARM64
       ARTIFACT: "aarch64-apple-darwin"
     steps:
-      - uses: actions/checkout@v3
+      - uses: haskell/ghcup-setup@v1
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
-          name: artifacts-mac-aarch64
+          pattern: artifacts-mac-aarch64-*
+          merge-multiple: true
           path: ./
 
       - name: Create bindist
@@ -708,7 +714,7 @@ jobs:
           bash .github/scripts/bindist.sh
 
       - name: Upload bindist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           name: bindists-mac-aarch64
@@ -716,9 +722,9 @@ jobs:
             ./out/*.tar.xz
             ./out/plan.json/*
 
-      - uses: geekyeggo/delete-artifact@v2
+      - uses: geekyeggo/delete-artifact@v4
         with:
-          name: artifacts-mac-aarch64
+          name: artifacts-mac-aarch64-*
 
   bindist-freebsd:
     name: Tar bindists (FreeBSD)
@@ -730,17 +736,22 @@ jobs:
       ARTIFACT: "x86_64-portbld-freebsd"
       RUNNER_OS: FreeBSD
     steps:
-      - uses: actions/checkout@v3
+      - name: Install prerequisites
+        run: |
+          sudo pkg install -y curl gcc gmp gmake ncurses perl5 libffi libiconv git bash misc/compat10x misc/compat11x misc/compat12x gmake llvm14 patchelf tree
 
-      - uses: actions/download-artifact@v3
+      - uses: haskell/ghcup-setup@v1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
-          name: artifacts-freebsd
+          pattern: artifacts-freebsd-*
+          merge-multiple: true
           path: ./
 
       - name: Create bindist
         run: |
-          sed -i.bak -e 's/quarterly/latest/' /etc/pkg/FreeBSD.conf
-          pkg install -y patchelf tree
           for bindist in out-*.tar ; do
             tar xf "${bindist}"
           done
@@ -748,7 +759,7 @@ jobs:
           bash .github/scripts/bindist.sh
 
       - name: Upload bindist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           name: bindists-freebsd
@@ -756,9 +767,9 @@ jobs:
             ./out/*.tar.xz
             ./out/plan.json/*
 
-      - uses: geekyeggo/delete-artifact@v2
+      - uses: geekyeggo/delete-artifact@v4
         with:
-          name: artifacts-freebsd
+          name: artifacts-freebsd-*
 
   bindist-win:
     name: Tar bindists (Windows)
@@ -769,6 +780,8 @@ jobs:
       ARTIFACT: "x86_64-mingw64"
       ARCH: 64
     steps:
+      - uses: haskell/ghcup-setup@v1
+
       - name: install windows deps
         shell: pwsh
         run: |
@@ -777,11 +790,12 @@ jobs:
           C:\msys64\usr\bin\bash -lc "pacman --disable-download-timeout --noconfirm -S unzip zip git"
           taskkill /F /FI "MODULES eq msys-2.0.dll"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: artifacts-win
+          pattern: artifacts-win-*
+          merge-multiple: true
           path: ./out
 
       - name: Create bindist
@@ -792,7 +806,7 @@ jobs:
         shell: pwsh
 
       - name: Upload bindist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           name: bindists-win
@@ -800,9 +814,9 @@ jobs:
             ./out/*.zip
             ./out/plan.json/*
 
-      - uses: geekyeggo/delete-artifact@v2
+      - uses: geekyeggo/delete-artifact@v4
         with:
-          name: artifacts-win
+          name: artifacts-win-*
 
   test-linux:
     name: Test linux binaries
@@ -896,9 +910,14 @@ jobs:
           echo "ID=linux" >> /etc/os-release
           echo "PRETTY_NAME=Linux" >> /etc/os-release
 
-      - uses: actions/checkout@v3
+      - id: ghcup
+        uses: haskell/ghcup-setup@v1
+        with:
+          cabal: latest
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-${{ matrix.ARTIFACT }}
           path: ./out
@@ -908,6 +927,7 @@ jobs:
         env:
           ARTIFACT: ${{ matrix.ARTIFACT }}
           DISTRO: ${{ matrix.DISTRO }}
+          GHCUP_BIN: ${{ steps.ghcup.output.bindir }}
 
   test-arm:
     name: Test ARM binary
@@ -943,34 +963,25 @@ jobs:
         shell: bash
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-arm
           path: ./out
-
-      - if: matrix.platform.ARCH == 'ARM'
-        uses: docker://hasufell/arm32v7-debian-haskell:10
-        name: Run test (armv7 linux)
-        with:
-          args: bash .github/scripts/test.sh
-        env:
-          ARCH: ${{ matrix.platform.ARCH }}
-          ARTIFACT: ${{ matrix.platform.ARTIFACT }}
 
       - if: matrix.platform.ARCH == 'ARM64'
         uses: docker://hasufell/arm64v8-debian-haskell:10
         name: Run test (aarch64 linux)
         with:
-          args: bash .github/scripts/test.sh
+          args: ghcup run -i --cabal latest bash .github/scripts/test.sh
         env:
           ARCH: ${{ matrix.platform.ARCH }}
           ARTIFACT: ${{ matrix.platform.ARTIFACT }}
 
   test-mac-x86_64:
     name: Test binary (Mac x86_64)
-    runs-on: macOS-12
+    runs-on: macOS-13
     needs: ["bindist-mac-x86_64"]
     env:
       MACOSX_DEPLOYMENT_TARGET: 10.13
@@ -979,10 +990,15 @@ jobs:
       TARBALL_EXT: tar.xz
       DISTRO: na
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - id: ghcup
+        uses: haskell/ghcup-setup@v1
+        with:
+          cabal: latest
 
-      - uses: actions/download-artifact@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-mac-x86_64
           path: ./out
@@ -991,6 +1007,8 @@ jobs:
         run: |
           brew install coreutils tree
           bash .github/scripts/test.sh
+        env:
+          GHCUP_BIN: ${{ steps.ghcup.output.bindir }}
 
   test-freebsd:
     name: Test binary (FreeBSD)
@@ -1003,10 +1021,19 @@ jobs:
       DISTRO: na
       RUNNER_OS: FreeBSD
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Install prerequisites
+        run: |
+          sudo pkg install -y curl gcc gmp gmake ncurses perl5 libffi libiconv git bash misc/compat10x misc/compat11x misc/compat12x gmake llvm14
 
-      - uses: actions/download-artifact@v3
+      - id: ghcup
+        uses: haskell/ghcup-setup@v1
+        with:
+          cabal: latest
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-freebsd
           path: ./out
@@ -1014,6 +1041,8 @@ jobs:
       - name: Run test (FreeBSD)
         run: |
           bash .github/scripts/test.sh
+        env:
+          GHCUP_BIN: ${{ steps.ghcup.output.bindir }}
 
   test-mac-aarch64:
     name: Test binary (Mac aarch64)
@@ -1027,10 +1056,15 @@ jobs:
       DISTRO: n
       HOMEBREW_CHANGE_ARCH_TO_ARM: 1
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - id: ghcup
+        uses: haskell/ghcup-setup@v1
+        with:
+          cabal: latest
 
-      - uses: actions/download-artifact@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-mac-aarch64
           path: ./out
@@ -1045,6 +1079,8 @@ jobs:
           export AR="$HOME/.brew/opt/llvm@13/bin/llvm-ar"
           export RANLIB="$HOME/.brew/opt/llvm@13/bin/llvm-ranlib"
           bash .github/scripts/test.sh
+        env:
+          GHCUP_BIN: ${{ steps.ghcup.output.bindir }}
 
   test-win:
     name: Test binary (Win)
@@ -1058,6 +1094,10 @@ jobs:
     strategy:
       fail-fast: false
     steps:
+      - uses: haskell/ghcup-setup@v1
+        with:
+          cabal: latest
+
       - name: install windows deps
         shell: pwsh
         run: |
@@ -1067,9 +1107,9 @@ jobs:
           taskkill /F /FI "MODULES eq msys-2.0.dll"
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-win
           path: ./out
@@ -1080,6 +1120,8 @@ jobs:
           $env:MSYS2_PATH_TYPE = "inherit"
           C:\msys64\usr\bin\bash -lc "bash .github/scripts/test.sh"
         shell: pwsh
+        env:
+          GHCUP_BIN: ${{ steps.ghcup.output.bindir }}
 
   release:
     name: release
@@ -1088,78 +1130,78 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-deb10
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-deb11
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-deb12
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-alpine
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-ubuntu20.04
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-ubuntu22.04
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-ubuntu24.04
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-fedora33
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-rocky8
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-rocky9
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-mint20.3
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: ./out
           name: bindists-x86_64-linux-mint21.3
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-arm
           path: ./out
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-freebsd
           path: ./out
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-mac-x86_64
           path: ./out
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-mac-aarch64
           path: ./out
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: bindists-win
           path: ./out
